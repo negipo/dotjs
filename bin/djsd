@@ -15,12 +15,21 @@ require 'webrick'
 
 dotjs = Class.new(WEBrick::HTTPServlet::AbstractServlet) do
   def do_GET(request, response)
-    file    = File.expand_path("#{request.path.gsub('/','')}")
+    path    = request.path.gsub('/','')
+    file_pathes = Dir.glob('*.js').select do |file_name|
+      path.match(Regexp.new(file_name.gsub(/_/, '.*') + '$'))
+    end
+    files = file_pathes.map do |file_name|
+      File.expand_path(file_name)
+    end
+
     default = File.expand_path("default.js")
 
     body = "// dotjs is working! //\n"
     body << File.read(default) + "\n" if File.file?(default)
-    body << File.read(file) if File.file?(file)
+    files.each do |file|
+      body << File.read(file)
+    end
 
     response.status = body.empty? ? 204 : 200
     if origin = detect_origin(request)
